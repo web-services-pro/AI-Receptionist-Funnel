@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lost Revenue Calculator - How Much Money Are You Losing From Missed Calls & Slow Response Times?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Dark Mode Aesthetic */
+        body { background-color: #020617; font-family: 'Inter', sans-serif; color: white; }
+        
+        /* Glassmorphism Card */
+        .quiz-card { 
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(100, 116, 139, 0.5); 
+            backdrop-filter: blur(12px); 
+        }
+        
+        /* Option Buttons */
+        .option-btn { 
+            transition: all 0.2s; 
+            border: 1px solid rgba(100, 116, 139, 0.5); 
+            background: rgba(15, 23, 42, 0.8);
+            font-size: 1.125rem;
+        }
+        .option-btn:hover { 
+            background-color: rgba(59, 130, 246, 0.3); 
+            border-color: #60a5fa; 
+            transform: translateY(-2px); 
+            color: #ffffff;
+        }
+        
+        /* Steps Logic */
+        .hidden-step { display: none; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <!-- Company Branding Header -->
+    <div class="fixed top-0 left-0 z-50 p-4 md:p-6">
+        <a href="https://www.webservicespro.co/" target="_blank" rel="noopener noreferrer" class="inline-block">
+            <img src="Web_Services_Pro_Logo_Black.png" alt="Web Services Pro" class="h-12 md:h-16 w-auto opacity-90 hover:opacity-100 transition-opacity duration-200" style="filter: invert(1) brightness(1.5);">
+        </a>
+    </div>
+
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute top-0 right-1/4 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="max-w-xl w-full" style="padding-top: 6rem;">
+        
+        <div id="progressContainer" class="mb-6 hidden-step">
+            <div class="flex justify-between text-sm text-slate-300 mb-2 font-medium">
+                <span>Assessment Progress</span>
+                <span>Step <span id="currentStepNum">1</span> of 11</span>
+            </div>
+            <div class="h-3 w-full bg-slate-800 rounded-full overflow-hidden border border-slate-600">
+                <div id="progressBar" class="h-full bg-gradient-to-r from-blue-500 to-indigo-400 transition-all duration-500" style="width: 9%"></div>
+            </div>
+        </div>
+
+        <div class="quiz-card rounded-2xl p-6 md:p-10 shadow-2xl relative">
+            <form id="quizForm">
+
+                <div id="introPage" class="text-center fade-in">
+                    <span class="inline-block py-1 px-4 rounded-full bg-blue-500/20 border border-blue-400 text-blue-300 text-sm font-bold mb-6">
+                        ● Free 2-Minute Assessment
+                    </span>
+                    
+                    <h1 class="text-3xl md:text-4xl font-extrabold mb-4 leading-tight text-white">The Missed Revenue Calculator</h1>
+                    <p class="text-slate-300 text-xl mb-3 font-semibold">For Appointment-Based Businesses</p>
+                    <p class="text-slate-300 text-lg mb-8 leading-relaxed">
+                        Discover exactly how much revenue you're losing to missed calls, slow response times, and inconsistent follow-up in under 2 minutes.
+                    </p>
+
+                    <div class="grid grid-cols-3 gap-4 mb-8">
+                        <div class="bg-slate-800/80 border border-slate-600 rounded-xl p-4 flex flex-col items-center justify-center shadow-lg">
+                            <i class="far fa-clock text-blue-400 mb-2 text-2xl"></i>
+                            <span class="text-sm font-medium text-slate-200">2 min</span>
+                        </div>
+                        <div class="bg-slate-800/80 border border-slate-600 rounded-xl p-4 flex flex-col items-center justify-center shadow-lg">
+                            <i class="fas fa-chart-bar text-blue-400 mb-2 text-2xl"></i>
+                            <span class="text-sm font-medium text-slate-200">10 Questions</span>
+                        </div>
+                        <div class="bg-slate-800/80 border border-slate-600 rounded-xl p-4 flex flex-col items-center justify-center shadow-lg">
+                            <i class="far fa-lightbulb text-yellow-400 mb-2 text-2xl"></i>
+                            <span class="text-sm font-medium text-slate-200">Instant Results</span>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="startQuiz()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xl font-bold py-5 rounded-xl transition-all shadow-[0_0_25px_rgba(37,99,235,0.6)] transform hover:scale-[1.02] border border-blue-400">
+                        Calculate My Lost Revenue →
+                    </button>
+                    <p class="text-sm text-slate-400 mt-4">No credit card required. 100% confidential.</p>
+                </div>
+                
+                <div class="step hidden-step fade-in" data-step="1">
+                    <h2 class="text-3xl font-bold mb-3 text-white">1. Monthly Lead Volume</h2>
+                    <p class="text-slate-300 text-lg mb-8">Approximately how many new leads or inquiries does your business receive each month?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(1, 'monthlyLeads', '25')">Under 50 leads/month</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(1, 'monthlyLeads', '75')">50 – 100 leads/month</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(1, 'monthlyLeads', '150')">100 – 200 leads/month</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(1, 'monthlyLeads', '250')">200+ leads/month</div>
+                    </div>
+                </div>
+                
+                <div class="step hidden-step fade-in" data-step="2">
+                    <h2 class="text-3xl font-bold mb-3 text-white">2. Average Customer Value</h2>
+                    <p class="text-slate-300 text-lg mb-8">What is the average lifetime value (LTV) of a single customer for your business?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(2, 'customerValue', '500')">Under $500</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(2, 'customerValue', '1500')">$500 – $2,000</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(2, 'customerValue', '5000')">$2,000 – $10,000</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(2, 'customerValue', '15000')">$10,000+</div>
+                    </div>
+                </div>
+
+                <div class="step hidden-step fade-in" data-step="3">
+                    <h2 class="text-3xl font-bold mb-3 text-white">3. After-Hours Coverage</h2>
+                    <p class="text-slate-300 text-lg mb-8">Can you capture and respond to leads that come in after business hours or when your team is busy?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(3, 'afterHours', 'always')">Yes, we have 24/7 coverage</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(3, 'afterHours', 'sometimes')">Sometimes – depends on staff availability</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(3, 'afterHours', 'rarely')">Rarely – mostly during business hours only</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(3, 'afterHours', 'never')">No – we miss most after-hours inquiries</div>
+                    </div>
+                </div>
+
+                <div class="step hidden-step fade-in" data-step="4">
+                    <h2 class="text-3xl font-bold mb-3 text-white">4. Speed-to-Lead Response Time</h2>
+                    <p class="text-slate-300 text-lg mb-8">What's the typical delay between when a lead comes in and your first contact/response?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(4, 'responseTime', 'instant')">Instant (under 5 minutes)</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(4, 'responseTime', 'same_day')">Same day (within a few hours)</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(4, 'responseTime', 'next_day')">Next business day</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(4, 'responseTime', 'slow')">2+ days or inconsistent</div>
+                    </div>
+                </div>
+
+                <div class="step hidden-step fade-in" data-step="5">
+                    <h2 class="text-3xl font-bold mb-3 text-white">5. Appointment Booking Process</h2>
+                    <p class="text-slate-300 text-lg mb-8">How do customers currently book appointments with you?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(5, 'bookingProcess', 'online')">Direct online booking (automated calendar)</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(5, 'bookingProcess', 'form')">Submit a form, then we contact them</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(5, 'bookingProcess', 'call')">They must call us to schedule</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(5, 'bookingProcess', 'manual')">Completely manual coordination via phone/email</div>
+                    </div>
+                </div>
+
+                <div class="step hidden-step fade-in" data-step="6">
+                    <h2 class="text-3xl font-bold mb-3 text-white">6. Follow-Up Consistency</h2>
+                    <p class="text-slate-300 text-lg mb-8">How would you describe your team's follow-up with leads who don't book immediately?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(6, 'followUp', 'excellent')">Excellent – we have automated systems in place</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(6, 'followUp', 'good')">Good – we follow up manually when we can</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(6, 'followUp', 'inconsistent')">Inconsistent – depends on how busy we are</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(6, 'followUp', 'poor')">Poor – most leads slip through the cracks</div>
+                    </div>
+                </div>
+
+                <div class="step hidden-step fade-in" data-step="7">
+                    <h2 class="text-3xl font-bold mb-3 text-white">7. Lead Leakage Visibility</h2>
+                    <p class="text-slate-300 text-lg mb-8">Do you know exactly where in your system leads are falling through the cracks?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(7, 'leakageKnowledge', 'yes')">Yes, we track everything closely</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(7, 'leakageKnowledge', 'somewhat')">Somewhat – we have a general idea</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(7, 'leakageKnowledge', 'no')">No, it's a complete blind spot</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(7, 'leakageKnowledge', 'guessing')">We suspect there are issues but can't prove it</div>
+                    </div>
+                </div>
+
+                <div class="step hidden-step fade-in" data-step="8">
+                    <h2 class="text-3xl font-bold mb-3 text-white">8. Sales Team Performance</h2>
+                    <p class="text-slate-300 text-lg mb-8">How consistent is your sales/intake team's performance across different days and staff members?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(8, 'teamPerformance', 'consistent')">Very consistent – standardized processes</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(8, 'teamPerformance', 'variable')">Variable – some days are great, others not</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(8, 'teamPerformance', 'unpredictable')">Unpredictable – depends who's working</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(8, 'teamPerformance', 'solo')">It's just me – I can't always be available</div>
+                    </div>
+                </div>
+
+                <div class="step hidden-step fade-in" data-step="9">
+                    <h2 class="text-3xl font-bold mb-3 text-white">9. Marketing Investment</h2>
+                    <p class="text-slate-300 text-lg mb-8">Are you currently paying for advertising or lead generation?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(9, 'adSpend', 'high')">Yes, significant budget ($3k+/month)</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(9, 'adSpend', 'medium')">Yes, moderate budget ($500–$3k/month)</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(9, 'adSpend', 'low')">Yes, minimal budget (under $500/month)</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(9, 'adSpend', 'no')">No, mostly referrals/organic traffic</div>
+                    </div>
+                </div>
+
+                <div class="step hidden-step fade-in" data-step="10">
+                    <h2 class="text-3xl font-bold mb-3 text-white">10. Qualification Challenge</h2>
+                    <p class="text-slate-300 text-lg mb-8">How much time does your team waste on unqualified leads or tire-kickers?</p>
+                    <div class="space-y-4">
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(10, 'timeWaste', 'minimal')">Minimal – we pre-qualify well</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(10, 'timeWaste', 'some')">Some – maybe 20-30% are time wasters</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(10, 'timeWaste', 'significant')">Significant – 40-50% waste our time</div>
+                        <div class="option-btn p-5 rounded-xl cursor-pointer font-medium text-slate-200" onclick="selectOption(10, 'timeWaste', 'major')">Major issue – over 50% aren't serious buyers</div>
+                    </div>
+                </div>
+
+                <div class="step hidden-step fade-in" data-step="11">
+                    <h2 class="text-3xl font-bold mb-3 text-white">Assessment Complete</h2>
+                    <p class="text-slate-300 text-lg mb-8">We've calculated your revenue leakage score. Where should we send your personalized report?</p>
+                    <div class="space-y-5">
+                        <div>
+                            <input type="text" id="companyName" required placeholder="Company Name" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-5 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-lg">
+                        </div>
+                        <div>
+                            <input type="text" id="userName" required placeholder="Your First Name" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-5 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-lg">
+                        </div>
+                        <div>
+                            <input type="email" id="userEmail" required placeholder="Email Address" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-5 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-lg">
+                        </div>
+                        <div>
+                            <input type="tel" id="userPhone" required placeholder="Phone Number" class="w-full bg-slate-900 border border-slate-600 rounded-xl p-5 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-lg">
+                        </div>
+                        
+                        <button type="button" id="submitBtn" onclick="submitQuiz()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xl font-bold py-5 rounded-xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.5)] transform hover:scale-[1.02] border border-blue-400/30">
+                            REVEAL MY REVENUE LEAKS →
+                        </button>
+                        <p class="text-sm text-center text-slate-400 mt-4 flex justify-center items-center gap-2">
+                            <i class="fas fa-lock"></i> Your data is secure and confidential.
+                        </p>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+        <div class="mt-12 text-center border-t border-slate-800 pt-8 pb-12">
+            <p class="text-xs text-slate-400 leading-relaxed max-w-lg mx-auto">
+                This site is not a part of the Facebook website or Facebook Inc. Additionally, This site is NOT endorsed by Facebook in any way. FACEBOOK is a trademark of FACEBOOK, Inc.
+            </p>
+            <div class="mt-4 flex justify-center gap-6 text-xs text-slate-300 font-medium">
+                <a href="https://www.webservicespro.co/privacy-policy" target="_blank" class="hover:text-white hover:underline transition-all">Privacy Policy</a>
+                <span class="text-slate-600">•</span>
+                <a href="https://www.webservicespro.co/terms-and-conditions" target="_blank" class="hover:text-white hover:underline transition-all">Terms of Service</a>
+            </div>
+            <p class="text-xs text-slate-500 mt-4">
+                &copy; <script>document.write(new Date().getFullYear())</script> Web Services Pro. All Rights Reserved.
+            </p>
+        </div>
+        
+    </div>
+
+    <script>
+        const answers = {};
+        let currentStep = 1;
+        const totalSteps = 11;
+        
+        // Google Apps Script Webhook URL
+        const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxIHLGXTUsg2u4q6EvZ7Z5Wu_X-R-1k-Ngz_jdWQhH0Shz8wUiuTN7vJBUty5oSjulO/exec";
+
+        function startQuiz() {
+            document.getElementById('introPage').style.display = 'none';
+            document.querySelector('[data-step="1"]').classList.remove('hidden-step');
+            document.getElementById('progressContainer').classList.remove('hidden-step');
+        }
+
+        function selectOption(step, key, value) {
+            answers[key] = value;
+            
+            if (step < totalSteps) {
+                setTimeout(() => {
+                    nextStep(step);
+                }, 200);
+            }
+        }
+
+        function nextStep(current) {
+            document.querySelector(`[data-step="${current}"]`).classList.add('hidden-step');
+            
+            const next = current + 1;
+            const nextEl = document.querySelector(`[data-step="${next}"]`);
+            if (nextEl) {
+                nextEl.classList.remove('hidden-step');
+                
+                currentStep = next;
+                document.getElementById('currentStepNum').innerText = currentStep;
+                const percent = (currentStep / totalSteps) * 100;
+                document.getElementById('progressBar').style.width = percent + "%";
+            }
+        }
+
+        async function submitQuiz() {
+            const btn = document.getElementById('submitBtn');
+            const company = document.getElementById('companyName').value;
+            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value;
+            const phone = document.getElementById('userPhone').value;
+
+            if(!company || !name || !email || !phone) {
+                alert("Please fill in all fields to generate your report.");
+                return;
+            }
+
+            btn.innerText = "Calculating Revenue Leaks...";
+            btn.disabled = true;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+            answers['company'] = company;
+            answers['name'] = name;
+            answers['email'] = email;
+            answers['phone'] = phone;
+
+            const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+            const queryParams = new URLSearchParams(answers).toString();
+            const finalRedirectUrl = `audit-report.html?${queryParams}`;
+            const fullReportLink = baseUrl + finalRedirectUrl;
+
+            answers['report_url'] = fullReportLink;
+
+            try {
+                await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    headers: { 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(answers)
+                });
+                
+                console.log("Data sent to backend successfully");
+
+            } catch (e) {
+                console.error("Webhook submission error (non-fatal):", e);
+            }
+
+            setTimeout(() => {
+                window.location.href = finalRedirectUrl;
+            }, 1000); 
+        }
+    </script>
+</body>
+</html>

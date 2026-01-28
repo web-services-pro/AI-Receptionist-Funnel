@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confidential Revenue Analysis - How Much Are You Losing to Missed Calls & Slow Response?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #020617; font-family: 'Inter', sans-serif; color: #f8fafc; }
+        
+        .glass-panel { 
+            background: rgba(15, 23, 42, 0.8); 
+            backdrop-filter: blur(12px); 
+            border: 1px solid rgba(71, 85, 105, 0.6); 
+        }
+
+        .status-green { background: rgba(22, 163, 74, 0.15); border: 1px solid rgba(22, 163, 74, 0.5); color: #4ade80; }
+        .status-red { background: rgba(220, 38, 38, 0.15); border: 1px solid rgba(220, 38, 38, 0.5); color: #fca5a5; }
+        .status-orange { background: rgba(234, 88, 12, 0.15); border: 1px solid rgba(234, 88, 12, 0.5); color: #fdba74; }
+
+        .gauge-circle {
+            transition: stroke-dashoffset 1s ease-in-out;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <!-- Company Branding Header -->
+    <div class="fixed top-0 left-0 z-50 p-4 md:p-6">
+        <a href="https://www.webservicespro.co/" target="_blank" rel="noopener noreferrer" class="inline-block">
+            <img src="Web_Services_Pro_Logo_Black.png" alt="Web Services Pro" class="h-12 md:h-16 w-auto opacity-90 hover:opacity-100 transition-opacity duration-200" style="filter: invert(1) brightness(1.5);">
+        </a>
+    </div>
+
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute top-0 left-1/2 w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2"></div>
+    </div>
+
+    <div class="max-w-3xl mx-auto" style="padding-top: 6rem;">
+        
+        <div class="text-center mb-12 fade-in">
+            <div class="inline-flex items-center justify-center w-36 h-36 relative mb-6">
+                <svg class="w-full h-full" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#1e293b" stroke-width="10" />
+                    <circle id="scoreGauge" cx="50" cy="50" r="45" fill="none" stroke="#f97316" stroke-width="10" 
+                            stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round" class="gauge-circle" />
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center flex-col">
+                    <span id="scoreDisplay" class="text-4xl font-extrabold text-white">0</span>
+                    <span class="text-sm text-slate-300 font-bold tracking-wide">SCORE</span>
+                </div>
+            </div>
+
+            <h1 class="text-3xl md:text-5xl font-bold mb-4 text-white">
+                <span id="companyNameDisplay">Your Business</span> Has a Revenue Leak!
+            </h1>
+            <p class="text-slate-300 text-lg">You're bleeding revenue from preventable gaps in your lead response system.</p>
+        </div>
+
+        <div class="bg-red-950/40 border border-red-500/40 rounded-2xl p-8 mb-12 text-center relative overflow-hidden shadow-2xl">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
+            
+            <p class="text-red-200 text-sm font-bold uppercase tracking-widest mb-3">Estimated Monthly Revenue Loss</p>
+            
+            <div class="flex flex-col md:flex-row justify-center items-center gap-2 md:gap-8 mb-8">
+                <div>
+                    <span id="monthlyLossDisplay" class="text-5xl md:text-6xl font-black text-white block tracking-tight mb-1">$0</span>
+                    <span class="text-sm text-red-200 opacity-80 font-medium">Lost Every Month</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 border-t border-red-500/20 pt-6">
+                <div>
+                    <p class="text-slate-300 text-sm mb-1">Annual Revenue Impact</p>
+                    <p id="annualLossDisplay" class="text-red-400 font-bold text-2xl">$0</p>
+                </div>
+                <div>
+                    <p class="text-slate-300 text-sm mb-1">Missed Calls/Month</p>
+                    <p id="missedCallsDisplay" class="text-white font-bold text-2xl">0</p>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-bold text-white mb-6 pl-3 border-l-4 border-blue-500">Your Detailed Breakdown</h2>
+        
+        <div id="breakdownContainer" class="space-y-6">
+            <div class="text-center p-10"><i class="fas fa-circle-notch fa-spin text-blue-500 text-2xl"></i> <span class="ml-3 text-slate-300">Analyzing Data...</span></div>
+        </div>
+
+        <div class="mt-16 bg-slate-900/90 border border-slate-700 rounded-3xl p-8 md:p-12 text-center relative overflow-hidden shadow-2xl">
+            <div class="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-transparent pointer-events-none"></div>
+            
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4 relative z-10">Stop Letting Revenue Slip Away</h2>
+            
+            <p class="text-slate-300 text-lg mb-6 max-w-2xl mx-auto relative z-10 leading-relaxed">
+                Web Services Pro's 24/7 AI Sales Receptionist ensures you <strong class="text-blue-400">never miss another opportunity</strong>. We're not just a tool—we're your profit-protection partner.
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8 relative z-10">
+                <div class="bg-slate-800/60 border border-slate-600 rounded-xl p-6 text-left">
+                    <div class="flex items-start gap-3 mb-3">
+                        <i class="fas fa-phone-volume text-green-400 text-2xl mt-1"></i>
+                        <div>
+                            <h3 class="font-bold text-white text-lg mb-2">Never Miss a Call Again</h3>
+                            <p class="text-slate-300 text-base">Our AI answers every call in under 3 seconds, 24/7/365. No more voicemails, no more "call back tomorrow."</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800/60 border border-slate-600 rounded-xl p-6 text-left">
+                    <div class="flex items-start gap-3 mb-3">
+                        <i class="fas fa-bolt text-yellow-400 text-2xl mt-1"></i>
+                        <div>
+                            <h3 class="font-bold text-white text-lg mb-2">Lightning-Fast Response</h3>
+                            <p class="text-slate-300 text-base">Beat your competition with instant responses. Studies show 78% of customers choose whoever responds first.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800/60 border border-slate-600 rounded-xl p-6 text-left">
+                    <div class="flex items-start gap-3 mb-3">
+                        <i class="fas fa-user-check text-purple-400 text-2xl mt-1"></i>
+                        <div>
+                            <h3 class="font-bold text-white text-lg mb-2">Pre-Qualified Appointments Only</h3>
+                            <p class="text-slate-300 text-base">AI screens every lead, asks qualifying questions, and only books serious buyers. No more tire-kickers wasting your time.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800/60 border border-slate-600 rounded-xl p-6 text-left">
+                    <div class="flex items-start gap-3 mb-3">
+                        <i class="fas fa-chart-line text-blue-400 text-2xl mt-1"></i>
+                        <div>
+                            <h3 class="font-bold text-white text-lg mb-2">Perfect Consistency</h3>
+                            <p class="text-slate-300 text-base">Every lead gets the same professional experience—no bad days, no sick calls, no human error.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-blue-500/30 rounded-2xl p-6 mb-8 relative z-10">
+                <h3 class="text-xl font-bold text-blue-300 mb-4 flex items-center justify-center gap-2">
+                    <i class="fas fa-trophy"></i> Real Client Results
+                </h3>
+                <div class="grid md:grid-cols-3 gap-4 text-left">
+                    <div class="bg-slate-900/60 rounded-lg p-4 border border-slate-700">
+                        <p class="text-slate-300 text-sm mb-2"><strong class="text-white">HVAC Company:</strong> Went from 40% missed calls to zero</p>
+                        <p class="text-green-400 font-bold text-lg">→ +$47K/Month Revenue</p>
+                        <p class="text-slate-400 text-xs mt-1">Within 60 days</p>
+                    </div>
+                    <div class="bg-slate-900/60 rounded-lg p-4 border border-slate-700">
+                        <p class="text-slate-300 text-sm mb-2"><strong class="text-white">Plumbing Service:</strong> Reduced response time from 4hrs to 30 seconds</p>
+                        <p class="text-green-400 font-bold text-lg">→ 2.3x Lead Conversion</p>
+                        <p class="text-slate-400 text-xs mt-1">23% → 53% close rate</p>
+                    </div>
+                    <div class="bg-slate-900/60 rounded-lg p-4 border border-slate-700">
+                        <p class="text-slate-300 text-sm mb-2"><strong class="text-white">Dental Practice:</strong> Eliminated after-hours leakage</p>
+                        <p class="text-green-400 font-bold text-lg">→ +28 Patients/Month</p>
+                        <p class="text-slate-400 text-xs mt-1">$84K additional revenue</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-yellow-900/20 border-2 border-yellow-500/40 rounded-xl p-6 mb-8 relative z-10">
+                <p class="text-yellow-200 text-lg font-bold mb-2">
+                    <i class="fas fa-lightbulb text-yellow-400"></i> Try Our AI Right Now (Free Demo):
+                </p>
+                <p class="text-slate-200 text-base leading-relaxed mb-4">
+                    Don't take our word for it. Call or text our live Orthodontist AI Demo at <strong class="text-white text-lg">+1 (828) 672-2638</strong> right now and see how it handles real conversations. Ask it anything—appointment booking, pricing, insurance questions—and experience the technology firsthand.
+                </p>
+                <a href="tel:+18286722638" class="inline-flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-all">
+                    <i class="fas fa-phone mr-2"></i> Call Demo Now: (828) 672-2638
+                </a>
+            </div>
+
+            <div class="bg-gradient-to-r from-slate-800/80 to-slate-900/80 border border-green-500/30 rounded-xl p-6 mb-8 relative z-10">
+                <h3 class="text-xl font-bold text-green-300 mb-3 flex items-center justify-center gap-2">
+                    <i class="fas fa-dollar-sign"></i> Simple, Transparent Pricing
+                </h3>
+                <div class="text-center">
+                    <p class="text-4xl font-black text-white mb-2">$1,500<span class="text-xl text-slate-400">/month</span></p>
+                    <p class="text-slate-300 text-base mb-4">All-inclusive rental. No setup fees. Cancel anytime.</p>
+                    <div class="grid grid-cols-2 gap-4 text-left max-w-xl mx-auto">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                            <span class="text-slate-200 text-sm">Unlimited calls & texts</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                            <span class="text-slate-200 text-sm">24/7/365 coverage</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                            <span class="text-slate-200 text-sm">Custom training for your business</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle text-green-400"></i>
+                            <span class="text-slate-200 text-sm">CRM integration included</span>
+                        </div>
+                    </div>
+                    <p class="text-slate-400 text-sm mt-4 italic">ROI Guarantee: If you don't recover the monthly cost in captured revenue within 60 days, we'll refund your fees.</p>
+                </div>
+            </div>
+
+            <div class="bg-red-900/20 border-2 border-red-500/40 rounded-xl p-6 mb-8 relative z-10">
+                <p class="text-red-200 text-lg font-bold mb-2">
+                    <i class="fas fa-exclamation-triangle text-red-400"></i> The Cost of Waiting:
+                </p>
+                <p class="text-slate-200 text-base leading-relaxed">
+                    Based on your assessment, you're losing <strong id="dailyLossDisplay" class="text-white text-lg">$0</strong> <em>every single day</em> you delay. That's money your competitors are capturing while you're stuck with the same broken system. The question isn't "Can I afford this?"—it's "Can I afford NOT to fix this?"
+                </p>
+            </div>
+
+            <a href="https://calendly.com/ai-automation-chatbot/intro" target="_blank" class="relative z-10 inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-blue-600 rounded-xl hover:bg-blue-500 shadow-lg shadow-blue-500/25 transform hover:scale-[1.02]">
+                <i class="fas fa-calendar-check mr-2"></i> Book Your Strategy Call (Free)
+            </a>
+            
+            <p class="text-sm text-slate-400 mt-5 relative z-10 font-medium">See exactly how we'll plug your revenue leaks in 15 minutes</p>
+
+            <div class="mt-10 pt-10 border-t border-slate-800 relative z-10">
+                <p class="text-slate-200 text-lg italic mb-3">"We were losing 40% of our calls after 5pm. Now we capture every single one. Our AI receptionist pays for itself 3x over every month."</p>
+                <p class="text-slate-400 text-sm font-bold uppercase tracking-wide">— Michael T., Peak HVAC Solutions</p>
+            </div>
+        </div>
+
+        <div class="text-center mt-12 pb-12">
+            <p class="text-slate-500 text-sm">
+                Powered by 
+                <a href="https://www.webservicespro.co/" target="_blank" rel="noopener noreferrer" class="font-bold text-slate-400 hover:text-blue-400 transition-colors">
+                    Web Services Pro
+                </a>
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        function getParam(key, backup) { return urlParams.get(key) || backup; }
+
+        const monthlyLeads = parseInt(getParam('monthlyLeads', '100'));
+        const customerValue = parseInt(getParam('customerValue', '1500'));
+        const afterHours = getParam('afterHours', 'sometimes');
+        const responseTime = getParam('responseTime', 'same_day');
+        const bookingProcess = getParam('bookingProcess', 'call');
+        const followUp = getParam('followUp', 'inconsistent');
+        const leakageKnowledge = getParam('leakageKnowledge', 'no');
+        const teamPerformance = getParam('teamPerformance', 'variable');
+        const adSpend = getParam('adSpend', 'medium');
+        const timeWaste = getParam('timeWaste', 'some');
+
+        const inputs = {
+            company: getParam('company', 'Your Business'),
+            name: getParam('name', 'there'),
+            email: getParam('email', ''),
+            phone: getParam('phone', ''),
+            monthlyLeads,
+            customerValue,
+            afterHours,
+            responseTime,
+            bookingProcess,
+            followUp,
+            leakageKnowledge,
+            teamPerformance,
+            adSpend,
+            timeWaste
+        };
+
+        // REVENUE LOSS CALCULATION
+        // Formula: Monthly Leads × 62% Missed Rate × 25% Conversion Rate × Customer Value
+        const missedCallRate = 0.62;
+        const conversionRate = 0.25;
+        const missedCallsPerMonth = Math.round(monthlyLeads * missedCallRate);
+        const monthlyRevenueLoss = Math.round(missedCallsPerMonth * conversionRate * customerValue);
+        const annualRevenueLoss = monthlyRevenueLoss * 12;
+        const dailyRevenueLoss = Math.round(monthlyRevenueLoss / 30);
+
+        // SCORE CALCULATION (0-100)
+        let score = 100;
+
+        // Deductions based on answers
+        if (afterHours === 'never') score -= 20;
+        else if (afterHours === 'rarely') score -= 15;
+        else if (afterHours === 'sometimes') score -= 10;
+
+        if (responseTime === 'slow') score -= 20;
+        else if (responseTime === 'next_day') score -= 15;
+        else if (responseTime === 'same_day') score -= 10;
+
+        if (bookingProcess === 'manual') score -= 15;
+        else if (bookingProcess === 'call') score -= 10;
+        else if (bookingProcess === 'form') score -= 5;
+
+        if (followUp === 'poor') score -= 15;
+        else if (followUp === 'inconsistent') score -= 10;
+        else if (followUp === 'good') score -= 5;
+
+        if (leakageKnowledge === 'no') score -= 10;
+        else if (leakageKnowledge === 'guessing') score -= 8;
+
+        if (teamPerformance === 'unpredictable') score -= 10;
+        else if (teamPerformance === 'variable') score -= 8;
+        else if (teamPerformance === 'solo') score -= 12;
+
+        if (timeWaste === 'major') score -= 10;
+        else if (timeWaste === 'significant') score -= 7;
+        else if (timeWaste === 'some') score -= 4;
+
+        if (score < 15) score = 15;
+
+        // Display Updates
+        document.getElementById('companyNameDisplay').innerText = inputs.company;
+        document.getElementById('scoreDisplay').innerText = score;
+        
+        const circle = document.getElementById('scoreGauge');
+        const radius = circle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        const offset = circumference - ((score / 100) * circumference);
+        
+        if(score > 70) circle.style.stroke = "#4ade80"; 
+        else if(score > 40) circle.style.stroke = "#fb923c"; 
+        else circle.style.stroke = "#ef4444"; 
+
+        setTimeout(() => { circle.style.strokeDashoffset = offset; }, 500);
+
+        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+        document.getElementById('monthlyLossDisplay').innerText = formatter.format(monthlyRevenueLoss);
+        document.getElementById('annualLossDisplay').innerText = formatter.format(annualRevenueLoss);
+        document.getElementById('missedCallsDisplay').innerText = missedCallsPerMonth.toLocaleString();
+        document.getElementById('dailyLossDisplay').innerText = formatter.format(dailyRevenueLoss);
+
+        // BREAKDOWN CARDS
+        const container = document.getElementById('breakdownContainer');
+        let html = '';
+
+        function createCard(title, answer, insight, isGood) {
+            const statusClass = isGood ? 'status-green' : 'status-red';
+            const statusText = isGood ? "You're performing well here" : "Critical Revenue Leak Detected";
+            const icon = isGood ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-triangle"></i>';
+            
+            return `
+            <div class="glass-panel rounded-xl p-6 border-l-4 ${isGood ? 'border-green-500' : 'border-red-500'}">
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="font-bold text-white text-xl">${title}</h3>
+                    <div class="text-xs px-3 py-1 rounded font-bold uppercase tracking-wide ${statusClass}">
+                        ${icon} ${isGood ? 'Optimized' : 'Leak Found'}
+                    </div>
+                </div>
+                <p class="text-base text-slate-300 mb-3">
+                    <span class="text-slate-400 text-sm uppercase font-bold tracking-wider">Your Answer:</span> <br/>
+                    <span class="text-white font-medium text-lg">"${answer}"</span>
+                </p>
+                <div class="text-base text-slate-200 mb-4 border-l-2 border-slate-600 pl-4 py-1 leading-relaxed">
+                    <strong class="${isGood ? 'text-green-400' : 'text-blue-400'} block mb-1">Why it matters:</strong> ${insight}
+                </div>
+                <div class="${statusClass} rounded-lg p-3 text-sm font-bold flex items-center gap-2">
+                    ${icon} ${statusText}
+                </div>
+            </div>`;
+        }
+
+        // 1. Monthly Lead Volume
+        html += createCard(
+            "Lead Volume & Opportunity Size",
+            monthlyLeads + " leads/month",
+            `With ${monthlyLeads} leads monthly, every missed call or slow response is a significant loss. Industry data shows 62% of calls go unanswered, meaning you're potentially missing ${missedCallsPerMonth} opportunities each month.`,
+            monthlyLeads > 100
+        );
+
+        // 2. After-Hours Coverage
+        if (afterHours === 'always') {
+            html += createCard(
+                "After-Hours Availability",
+                "24/7 Coverage",
+                "Excellent—you're capturing leads around the clock. However, ensure your coverage is consistent and professional at all hours.",
+                true
+            );
+        } else {
+            html += createCard(
+                "After-Hours Revenue Leakage",
+                afterHours === 'never' ? 'No after-hours coverage' : afterHours === 'rarely' ? 'Rarely covered' : 'Sometimes covered',
+                "Studies show 35-40% of leads contact businesses outside of standard hours. Without 24/7 coverage, these leads immediately call your competitors. Every missed after-hours call is essentially gifting business to someone else.",
+                false
+            );
+        }
+
+        // 3. Response Time (Speed-to-Lead)
+        if (responseTime === 'instant') {
+            html += createCard(
+                "Speed-to-Lead",
+                "Under 5 minutes",
+                "Outstanding response time! You understand that speed wins deals. Maintain this competitive advantage.",
+                true
+            );
+        } else {
+            const timeMap = {
+                'same_day': 'Within a few hours',
+                'next_day': 'Next business day',
+                'slow': '2+ days'
+            };
+            html += createCard(
+                "Speed-to-Lead Crisis",
+                timeMap[responseTime],
+                "Research from Harvard Business Review shows you're 21x more likely to qualify a lead if you respond in 5 minutes vs 30 minutes. By waiting hours or days, you're essentially handing qualified leads to faster competitors. 78% of customers buy from whoever responds first.",
+                false
+            );
+        }
+
+        // 4. Booking Process Friction
+        if (bookingProcess === 'online') {
+            html += createCard(
+                "Booking Experience",
+                "Direct online booking",
+                "Smart move—automation reduces friction. Ensure your AI can also handle questions and objections, not just calendar links.",
+                true
+            );
+        } else {
+            const processMap = {
+                'form': 'Submit form, then we contact them',
+                'call': 'Must call to schedule',
+                'manual': 'Manual coordination'
+            };
+            html += createCard(
+                "Booking Friction & Abandonment",
+                processMap[bookingProcess],
+                "Every extra step in your booking process creates abandonment. Requiring phone calls or form submissions adds friction—modern buyers expect instant, conversational booking. Each hurdle costs you 20-30% of potential conversions.",
+                false
+            );
+        }
+
+        // 5. Follow-Up Consistency
+        if (followUp === 'excellent') {
+            html += createCard(
+                "Follow-Up System",
+                "Automated & systematic",
+                "You're ahead of 95% of businesses. Ensure your automation feels personal and adjusts based on lead behavior.",
+                true
+            );
+        } else {
+            const followUpMap = {
+                'good': 'Manual follow-up when possible',
+                'inconsistent': 'Depends on how busy we are',
+                'poor': 'Most leads slip through'
+            };
+            html += createCard(
+                "Follow-Up Failure & Lead Decay",
+                followUpMap[followUp],
+                "80% of sales require 5+ touchpoints, but 44% of salespeople give up after one attempt. Inconsistent follow-up means qualified leads go cold. Without systematic automation, you're losing deals simply because humans forget, get busy, or lack bandwidth.",
+                false
+            );
+        }
+
+        // 6. Leakage Visibility
+        if (leakageKnowledge === 'yes') {
+            html += createCard(
+                "Data Tracking & Visibility",
+                "We track everything closely",
+                "Good awareness, but visibility alone doesn't fix leaks. The key is automated intervention at the moment leads start slipping.",
+                true
+            );
+        } else {
+            const leakMap = {
+                'somewhat': 'General idea',
+                'no': 'Complete blind spot',
+                'guessing': 'Suspect issues but can\'t prove'
+            };
+            html += createCard(
+                "Invisible Revenue Drain",
+                leakMap[leakageKnowledge],
+                "You can't fix what you can't see. Without clear tracking of where leads drop off—voicemail abandonment, after-hours inquiries, slow response times—you're flying blind. Our AI provides full visibility AND automatically plugs the gaps in real-time.",
+                false
+            );
+        }
+
+        // 7. Team Performance Consistency
+        if (teamPerformance === 'consistent') {
+            html += createCard(
+                "Team Consistency",
+                "Standardized & reliable",
+                "Impressive—you've built systems that work. AI can amplify this by handling routine interactions, freeing your team for complex deals.",
+                true
+            );
+        } else {
+            const perfMap = {
+                'variable': 'Some days great, others not',
+                'unpredictable': 'Depends who\'s working',
+                'solo': 'Just me—can\'t always be available'
+            };
+            html += createCard(
+                "Inconsistent Lead Experience",
+                perfMap[teamPerformance],
+                "Human inconsistency is expensive. Tired reps, bad days, sick calls, and varying skill levels mean some leads get A+ service while others get ignored. Every lead deserves the same professional experience—AI delivers perfect consistency 24/7/365.",
+                false
+            );
+        }
+
+        // 8. Marketing Investment Waste
+        const spendMap = {
+            'high': 'Significant ($3k+/month)',
+            'medium': 'Moderate ($500-$3k/month)',
+            'low': 'Minimal (under $500/month)',
+            'no': 'Mostly referrals/organic'
+        };
+        html += createCard(
+            "Marketing ROI Optimization",
+            spendMap[adSpend],
+            adSpend === 'no' ? 
+                "Even without ad spend, every organic lead is valuable. Capturing more of your existing traffic is pure profit." :
+                `You're investing in traffic but leaking leads through poor follow-up. If you're spending money to generate leads, you MUST respond instantly and professionally to each one. Otherwise, you're literally burning ad dollars—paying to send leads to competitors.`,
+            adSpend === 'no'
+        );
+
+        // 9. Time Waste on Unqualified Leads
+        if (timeWaste === 'minimal') {
+            html += createCard(
+                "Lead Qualification",
+                "Pre-qualify well",
+                "Strong pre-qualification saves massive time. AI can further optimize this by asking deeper qualifying questions conversationally.",
+                true
+            );
+        } else {
+            const wasteMap = {
+                'some': '20-30% are time wasters',
+                'significant': '40-50% waste time',
+                'major': 'Over 50% aren\'t serious'
+            };
+            html += createCard(
+                "Wasted Time on Tire-Kickers",
+                wasteMap[timeWaste],
+                "Tire-kickers don't just waste time—they cost you real money. Every minute spent with unqualified leads is time NOT spent with ready buyers. AI pre-qualifies every lead automatically, screening for budget, timeline, and intent BEFORE booking your calendar.",
+                false
+            );
+        }
+
+        // 10. Customer Value Impact
+        html += createCard(
+            "Customer Lifetime Value",
+            formatter.format(customerValue),
+            customerValue >= 5000 ? 
+                "With high-value customers, every single missed lead is devastating. Losing just 2-3 deals per month due to slow response equals the entire cost of an AI receptionist—and you're likely losing far more." :
+                "At this transaction value, volume matters. You need to capture every possible lead because margins depend on conversion efficiency. AI ensures you never leave money on the table.",
+            customerValue >= 5000
+        );
+
+        container.innerHTML = html;
+    </script>
+</body>
+</html>
