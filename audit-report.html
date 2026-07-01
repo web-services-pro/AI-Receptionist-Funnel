@@ -166,15 +166,419 @@
 
             <div class="bg-yellow-900/20 border-2 border-yellow-500/40 rounded-xl p-6 mb-8 relative z-10">
                 <p class="text-yellow-200 text-lg font-bold mb-2">
-                    <i class="fas fa-lightbulb text-yellow-400"></i> Try Our AI Right Now (Free Demo):
+                    <i class="fas fa-lightbulb text-yellow-400"></i> Try Our AI Right Now (Live Demo):
                 </p>
-                <p class="text-slate-200 text-base leading-relaxed mb-4">
-                    Don't take our word for it. Call or text our live Orthodontist AI Demo at <strong class="text-white text-lg">+1 (828) 672-2638</strong> right now and see how it handles real conversations. Ask it anything—appointment booking, pricing, insurance questions—and experience the technology firsthand.
+                <p class="text-slate-200 text-base leading-relaxed mb-5">
+                    Don't take our word for it. Press the button below and speak directly to our live AI receptionist — ask it anything about appointments, availability, or your specific service, and experience the technology firsthand.
                 </p>
-                <a href="tel:+18286722638" class="inline-flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-500 text-white font-bold rounded-lg transition-all">
-                    <i class="fas fa-phone mr-2"></i> Call Demo Now: (828) 672-2638
-                </a>
+
+                <!-- ── Deepgram Voice Agent Demo Widget ─────────────────── -->
+                <div id="dg-widget" class="bg-slate-900/80 border border-slate-600/60 rounded-xl p-5">
+
+                    <!-- Status bar -->
+                    <div class="flex justify-between items-center font-mono text-xs text-slate-400 mb-4 gap-2 flex-wrap">
+                        <span>CALL&nbsp;<span id="dg-call-id">#—</span></span>
+                        <span>STATUS:&nbsp;<span id="dg-status">STANDBY</span></span>
+                        <span id="dg-timer-wrap" style="display:none;">TIME LEFT:&nbsp;<span id="dg-timer">3:00</span></span>
+                    </div>
+
+                    <!-- Mic button -->
+                    <div class="flex flex-col items-center gap-3">
+                        <button
+                            id="dg-btn"
+                            type="button"
+                            aria-label="Start the demo call"
+                            class="w-24 h-24 rounded-full border-2 border-orange-500 bg-orange-500/20 text-orange-400 flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </button>
+                        <p id="dg-caption" class="text-slate-300 text-sm text-center min-h-[1.25rem]">
+                            Tap to start the demo call
+                        </p>
+                    </div>
+
+                    <!-- Live transcript -->
+                    <div id="dg-transcript" class="mt-4 max-h-44 overflow-y-auto flex flex-col gap-2"></div>
+
+                </div>
+                <!-- ── End Deepgram Widget ───────────────────────────────── -->
             </div>
+
+            <style>
+                #dg-btn.dg-active {
+                    background-color: rgb(249 115 22);
+                    color: rgb(2 6 23);
+                    animation: dg-pulse 1.6s ease-in-out infinite;
+                }
+                @keyframes dg-pulse {
+                    0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+                    50%       { box-shadow: 0 0 0 14px transparent; }
+                }
+                @media (prefers-reduced-motion: reduce) {
+                    #dg-btn.dg-active { animation: none; }
+                }
+            </style>
+
+            <script>
+            (function () {
+                'use strict';
+
+                // ── Configuration ───────────────────────────────────────────
+                // The absolute URL to your Vercel token endpoint.
+                // This must be absolute because this page is on a different
+                // domain than the Vercel deployment.
+                const TOKEN_ENDPOINT = 'https://deepgram-voice-ai-demo.vercel.app/api/token';
+
+                // Persona for this funnel. Generic home-services front desk
+                // so it feels relevant regardless of the visitor's industry.
+                const SYSTEM_PROMPT =
+                    'You are a friendly, professional AI phone receptionist for a local home services business. ' +
+                    'You are handling a live incoming call. Sound natural and warm — like a sharp front-desk ' +
+                    'coordinator, not a robotic script reader. Keep all responses short and conversational, ' +
+                    'the way a real phone call sounds, not long paragraphs. ' +
+                    'Your job: greet the caller, find out what service they need, how urgent it is, ' +
+                    'get their name, email, and a callback number, and offer available appointment windows to get them booked in. ' +
+                    'If asked what you are, be honest — you are an AI receptionist that handles calls ' +
+                    '24 hours a day, 7 days a week, so no lead ever gets missed. ' +
+                    'If asked about specific pricing, let the caller know a specialist will confirm ' +
+                    'exact details on a follow-up call since it depends on the specific job. ' +
+                    'Stay upbeat, helpful, and never pushy.';
+
+                const GREETING =
+                    'Hi, this is Sarah with Home Services Pros, thanks for calling! ' +
+                    'What can I help you with today?';
+
+                const SESSION_LIMIT_SECONDS = 180; // 3-minute demo cap
+                // ── End configuration ───────────────────────────────────────
+
+                const AGENT_URL          = 'wss://agent.deepgram.com/v1/agent/converse';
+                const OUTPUT_SAMPLE_RATE = 24000;
+
+                // AudioWorklet processor source — loaded from a Blob URL so
+                // the entire widget is self-contained with no extra files.
+                // Processor name is namespaced to avoid conflicts if another
+                // AudioWorklet is already registered elsewhere on the page.
+                const WORKLET_SOURCE = [
+                    'class PCMProcessorQuiz extends AudioWorkletProcessor {',
+                    '  constructor() {',
+                    '    super();',
+                    '    this.bufferSize = 2048;',
+                    '    this.buffer = new Float32Array(this.bufferSize);',
+                    '    this.bufferIndex = 0;',
+                    '  }',
+                    '  process(inputs) {',
+                    '    const input = inputs[0];',
+                    '    if (input && input[0]) {',
+                    '      const ch = input[0];',
+                    '      for (let i = 0; i < ch.length; i++) {',
+                    '        this.buffer[this.bufferIndex++] = ch[i];',
+                    '        if (this.bufferIndex >= this.bufferSize) {',
+                    '          const pcm16 = new Int16Array(this.bufferSize);',
+                    '          for (let j = 0; j < this.bufferSize; j++) {',
+                    '            const s = Math.max(-1, Math.min(1, this.buffer[j]));',
+                    '            pcm16[j] = s < 0 ? s * 0x8000 : s * 0x7FFF;',
+                    '          }',
+                    '          this.port.postMessage(pcm16.buffer, [pcm16.buffer]);',
+                    '          this.bufferIndex = 0;',
+                    '        }',
+                    '      }',
+                    '    }',
+                    '    return true;',
+                    '  }',
+                    '}',
+                    'registerProcessor("pcm-processor-quiz", PCMProcessorQuiz);'
+                ].join('\n');
+
+                // DOM refs
+                const btn          = document.getElementById('dg-btn');
+                const caption      = document.getElementById('dg-caption');
+                const statusEl     = document.getElementById('dg-status');
+                const callIdEl     = document.getElementById('dg-call-id');
+                const timerWrap    = document.getElementById('dg-timer-wrap');
+                const timerEl      = document.getElementById('dg-timer');
+                const transcriptEl = document.getElementById('dg-transcript');
+
+                // State
+                let ws, audioContext, micStream, workletNode, micSource;
+                let settingsApplied = false;
+                let isActive        = false;
+                let countdown       = null;
+                let secondsLeft     = SESSION_LIMIT_SECONDS;
+                let nextPlayTime    = 0;
+                let activeSources   = [];
+
+                function setStatus(t) { statusEl.textContent = t; }
+
+                function addLine(role, text) {
+                    if (!text) return;
+                    const row   = document.createElement('div');
+                    const label = document.createElement('span');
+                    const body  = document.createElement('span');
+                    label.style.cssText   = 'display:block;font-family:monospace;font-size:10px;letter-spacing:.08em;margin-bottom:2px;';
+                    label.style.color     = role === 'user' ? '#4ade80' : '#fb923c';
+                    label.textContent     = role === 'user' ? 'YOU' : 'AI';
+                    body.style.cssText    = 'color:#e2e8f0;font-size:13px;line-height:1.45;';
+                    body.textContent      = text;
+                    row.appendChild(label);
+                    row.appendChild(body);
+                    transcriptEl.appendChild(row);
+                    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+                }
+
+                function fmtTime(s) {
+                    return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+                }
+
+                function startCountdown() {
+                    secondsLeft = SESSION_LIMIT_SECONDS;
+                    timerWrap.style.display = '';
+                    timerEl.textContent = fmtTime(secondsLeft);
+                    countdown = setInterval(function () {
+                        secondsLeft -= 1;
+                        timerEl.textContent = fmtTime(Math.max(secondsLeft, 0));
+                        if (secondsLeft <= 0) endCall('limit');
+                    }, 1000);
+                }
+
+                function stopCountdown() {
+                    if (countdown) { clearInterval(countdown); countdown = null; }
+                    timerWrap.style.display = 'none';
+                }
+
+                function stopPlayback() {
+                    activeSources.forEach(function (s) { try { s.stop(); } catch (e) {} });
+                    activeSources = [];
+                    if (audioContext) nextPlayTime = audioContext.currentTime;
+                }
+
+                function playAgentAudio(arrayBuffer) {
+                    if (!audioContext) return;
+                    const i16 = new Int16Array(arrayBuffer);
+                    const f32 = new Float32Array(i16.length);
+                    for (let i = 0; i < i16.length; i++) {
+                        f32[i] = i16[i] / (i16[i] < 0 ? 0x8000 : 0x7FFF);
+                    }
+                    const buf = audioContext.createBuffer(1, f32.length, OUTPUT_SAMPLE_RATE);
+                    buf.copyToChannel(f32, 0);
+                    const src = audioContext.createBufferSource();
+                    src.buffer = buf;
+                    src.connect(audioContext.destination);
+                    const startAt = Math.max(nextPlayTime, audioContext.currentTime);
+                    src.start(startAt);
+                    nextPlayTime = startAt + buf.duration;
+                    activeSources.push(src);
+                    src.onended = function () {
+                        activeSources = activeSources.filter(function (x) { return x !== src; });
+                    };
+                }
+
+                function buildSettings(inputSampleRate) {
+                    return {
+                        type: 'Settings',
+                        audio: {
+                            input:  { encoding: 'linear16', sample_rate: inputSampleRate },
+                            output: { encoding: 'linear16', sample_rate: OUTPUT_SAMPLE_RATE, container: 'none' }
+                        },
+                        agent: {
+                            language: 'en',
+                            listen: {
+                                provider: { type: 'deepgram', model: 'flux-general-en', version: 'v2' }
+                            },
+                            think: {
+                                provider: { type: 'open_ai', model: 'gpt-4o-mini', temperature: 0.7 },
+                                prompt: SYSTEM_PROMPT
+                            },
+                            speak: {
+                                provider: { type: 'deepgram', model: 'aura-2-hera-en' }
+                            },
+                            greeting: GREETING
+                        },
+                        tags: ['wsp-quiz-funnel-demo']
+                    };
+                }
+
+                async function handleServerMessage(event) {
+                    if (typeof event.data === 'string') {
+                        let msg;
+                        try { msg = JSON.parse(event.data); } catch (e) { return; }
+                        switch (msg.type) {
+                            case 'SettingsApplied':
+                                settingsApplied = true;
+                                setStatus('LISTENING');
+                                caption.textContent = 'Live — tap to end';
+                                startCountdown();
+                                if (micSource && workletNode) micSource.connect(workletNode);
+                                break;
+                            case 'ConversationText':
+                                addLine(msg.role, msg.content);
+                                break;
+                            case 'UserStartedSpeaking':
+                                setStatus('LISTENING');
+                                stopPlayback();
+                                break;
+                            case 'AgentThinking':
+                                setStatus('THINKING');
+                                break;
+                            case 'AgentStartedSpeaking':
+                                setStatus('SPEAKING');
+                                break;
+                            case 'AgentAudioDone':
+                                setStatus('LISTENING');
+                                break;
+                            case 'Error':
+                                console.error('[DG demo] Agent error:', msg);
+                                endCall('error');
+                                break;
+                            default:
+                                break;
+                        }
+                    } else {
+                        const buf = event.data instanceof ArrayBuffer
+                            ? event.data
+                            : await event.data.arrayBuffer();
+                        playAgentAudio(buf);
+                    }
+                }
+
+                async function setupAudioGraph() {
+                    micStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            channelCount:     1,
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl:  true
+                        }
+                    });
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    if (audioContext.state === 'suspended') await audioContext.resume();
+
+                    const blob    = new Blob([WORKLET_SOURCE], { type: 'application/javascript' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    await audioContext.audioWorklet.addModule(blobUrl);
+                    URL.revokeObjectURL(blobUrl);
+
+                    micSource   = audioContext.createMediaStreamSource(micStream);
+                    workletNode = new AudioWorkletNode(audioContext, 'pcm-processor-quiz');
+                    workletNode.connect(audioContext.destination);
+
+                    workletNode.port.onmessage = function (ev) {
+                        if (ws && ws.readyState === WebSocket.OPEN && settingsApplied) {
+                            ws.send(ev.data);
+                        }
+                    };
+
+                    nextPlayTime = audioContext.currentTime;
+                    return audioContext.sampleRate;
+                }
+
+                function cleanup() {
+                    if (ws)          { try { ws.close();              } catch (e) {} ws          = null; }
+                    if (micSource)   { try { micSource.disconnect();   } catch (e) {} micSource   = null; }
+                    if (workletNode) { try { workletNode.disconnect(); } catch (e) {} workletNode = null; }
+                    if (micStream)   { micStream.getTracks().forEach(function (t) { t.stop(); }); micStream = null; }
+                    if (audioContext){ audioContext.close(); audioContext = null; }
+                }
+
+                async function startCall() {
+                    if (isActive) return;
+                    isActive        = true;
+                    settingsApplied = false;
+                    btn.classList.add('dg-active');
+                    caption.textContent    = 'Connecting…';
+                    setStatus('CONNECTING');
+                    callIdEl.textContent   = '#' + Math.floor(10000 + Math.random() * 89999);
+                    transcriptEl.innerHTML = '';
+
+                    // Stage 1: Microphone
+                    let inputSampleRate;
+                    try {
+                        inputSampleRate = await setupAudioGraph();
+                    } catch (err) {
+                        console.error('[DG demo] Mic error:', err);
+                        setStatus('MIC BLOCKED');
+                        caption.textContent = 'Microphone access was denied. Allow it in your browser settings and tap again.';
+                        isActive = false;
+                        btn.classList.remove('dg-active');
+                        return;
+                    }
+
+                    // Stage 2: Token
+                    let resolvedToken;
+                    try {
+                        const res = await fetch(TOKEN_ENDPOINT, { mode: 'cors' });
+                        if (!res.ok) throw new Error('Server returned ' + res.status);
+                        const data = await res.json();
+                        resolvedToken = data.access_token || data.key;
+                        if (!resolvedToken) throw new Error('No token field in response');
+                    } catch (err) {
+                        console.error('[DG demo] Token error:', err);
+                        setStatus('SERVER ERROR');
+                        caption.textContent = 'Could not reach the demo server. Please try again shortly.';
+                        isActive = false;
+                        btn.classList.remove('dg-active');
+                        cleanup();
+                        return;
+                    }
+
+                    // Stage 3: WebSocket to Deepgram
+                    let opened = false;
+                    ws = new WebSocket(AGENT_URL, ['token', resolvedToken]);
+                    ws.binaryType = 'arraybuffer';
+
+                    ws.onopen = function () {
+                        opened = true;
+                        ws.send(JSON.stringify(buildSettings(inputSampleRate)));
+                    };
+
+                    ws.onmessage = handleServerMessage;
+
+                    ws.onerror = function (e) {
+                        console.error('[DG demo] WebSocket error:', e);
+                    };
+
+                    ws.onclose = function (ev) {
+                        if (!opened) {
+                            console.error('[DG demo] WebSocket rejected. Code:', ev.code);
+                            setStatus('AUTH FAILED');
+                            caption.textContent = 'Connection rejected — check your Deepgram API key and CORS settings.';
+                            isActive = false;
+                            btn.classList.remove('dg-active');
+                            cleanup();
+                        } else if (isActive) {
+                            endCall('closed');
+                        }
+                    };
+                }
+
+                function endCall(reason) {
+                    isActive        = false;
+                    settingsApplied = false;
+                    stopCountdown();
+                    stopPlayback();
+                    cleanup();
+                    btn.classList.remove('dg-active');
+                    if (reason === 'limit') {
+                        setStatus('DEMO ENDED');
+                        caption.textContent = 'Demo time limit reached.';
+                    } else if (reason === 'error') {
+                        setStatus('ERROR');
+                        caption.textContent = 'Something went wrong. Tap to try again.';
+                    } else {
+                        setStatus('STANDBY');
+                        caption.textContent = 'Tap to start the demo call';
+                    }
+                }
+
+                btn.addEventListener('click', function () {
+                    if (isActive) { endCall('manual'); } else { startCall(); }
+                });
+
+            })();
+            </script>
 
             <div class="bg-gradient-to-r from-slate-800/80 to-slate-900/80 border border-green-500/30 rounded-xl p-6 mb-8 relative z-10">
                 <h3 class="text-xl font-bold text-green-300 mb-3 flex items-center justify-center gap-2">
@@ -183,8 +587,8 @@
                 <div class="text-center">
                     <!-- Comparison to Alternative (Option C) -->
                     <div class="mb-3">
-                        <p class="text-sm text-slate-500 line-through mb-1">Full-time receptionist: $3,500+/month + benefits</p>
-                        <p class="text-sm text-slate-500 line-through">Answering service: $800-$1,200/month (limited capabilities)</p>
+                        <p class="text-sm text-slate-500 mb-1">Full-time receptionist: $3,500-5,000+/month + benefits, taxes, etc.</p>
+                        <p class="text-sm text-slate-500">Answering service: $800-$1,200/month (limited capabilities)</p>
                     </div>
         
                     <!-- Main Price with Breakdown (Option A) -->
