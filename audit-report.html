@@ -1184,7 +1184,7 @@
         html += createCard(
             "Lead Volume & Opportunity Size",
             monthlyLeads + " leads/month",
-            `With ${monthlyLeads} leads monthly, every missed call or slow response is a significant loss. Industry data shows 62% of calls go unanswered, meaning you're potentially missing ${missedCallsPerMonth} opportunities each month.`,
+            `With ${monthlyLeads} leads monthly, every missed call or slow response is a significant loss. Industry data (large studies by 411 Locals and Marchex Call Analytics) shows 62.2% of calls fail to reach a live rep and go unanswered, meaning you're potentially missing ${missedCallsPerMonth} opportunities each month. A study from Dialzara and HubSpot found that 62% to 75% of those unanswered callers will immediately dial a competitor straight from the search results page.`,
             monthlyLeads > 100
         );
 
@@ -1200,7 +1200,7 @@
             html += createCard(
                 "After-Hours Revenue Leakage",
                 afterHours === 'never' ? 'No after-hours coverage' : afterHours === 'rarely' ? 'Rarely covered' : 'Sometimes covered',
-                "Studies show 35-40% of leads contact businesses outside of standard hours. Without 24/7 coverage, these leads immediately call your competitors. Every missed after-hours call is essentially gifting business to someone else.",
+                "Studies show 35-40% of leads contact businesses outside of standard hours. Additionally, industry data from the Ruby Small Business Communication Report shows that small businesses miss 20% to 35% of their incoming calls during their stated standard operating hours. Without 24/7 coverage, these leads immediately call your competitors. Every missed after-hours call is essentially gifting business to someone else.",
                 false
             );
         }
