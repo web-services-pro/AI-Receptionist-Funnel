@@ -37,14 +37,32 @@
 	'https://connect.facebook.net/en_US/fbevents.js');
 	fbq('init', '764970315154958');
 	fbq('track', 'PageView');
-	try {
-	  if (!sessionStorage.getItem('voiceai_lead_fired')) {
-	    fbq('track', 'Lead', { content_name: 'VoiceAI Quiz Completed' });
-	    sessionStorage.setItem('voiceai_lead_fired', '1');
-	  }
-	} catch (e) {
-	  fbq('track', 'Lead', { content_name: 'VoiceAI Quiz Completed' });
-	}
+
+	// STRICT VERIFIED LEAD TRIGGER
+	(function() {
+	    try {
+	        const params = new URLSearchParams(window.location.search);
+	        const email = params.get('email');
+	        const token = sessionStorage.getItem('voiceai_auth_lead_token');
+	        const hasFired = sessionStorage.getItem('voiceai_lead_fired');
+	        
+	        // Verify that a syntactically correct email is present in URL
+	        const emailValid = email && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+
+	        // Only trigger if arriving directly from a completed, verified quiz session
+	        if (token && !hasFired && emailValid) {
+	            fbq('track', 'Lead', {
+	                content_name: 'VoiceAI Quiz Completed',
+	                currency: 'USD'
+	            });
+	            // Persist fired state and consume single-use token immediately
+	            sessionStorage.setItem('voiceai_lead_fired', '1');
+	            sessionStorage.removeItem('voiceai_auth_lead_token');
+	        }
+	    } catch (e) {
+	        console.error("Lead tracking exception:", e);
+	    }
+	})();
 	</script>
 	<noscript><img height="1" width="1" style="display:none"
 	src="https://www.facebook.com/tr?id=764970315154958&ev=PageView&noscript=1"
