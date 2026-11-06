@@ -357,7 +357,7 @@
 
 	        // Dummy usernames
     	    const fakeUsernames = ['test', 'asdf', 'fake', 'admin', 'aaa', 'abc', '123', 'none', 'testing'];
-        	if (fakeUsernames.includes(user) || /^([a-z0-9])\1{2,}$/.test(user)) {
+        	if (fakeUsernames.includes(user) || /^([a-z0-9]) {2,}$/.test(user)) {
             	return { valid: false, message: "Please enter an authentic business email address." };
         	}
 
@@ -372,7 +372,7 @@
     	        return { valid: false, message: "Please enter a valid phone number (at least 10 digits)." };
         	}
         	// Disallow identical repeating digits (e.g. 0000000000, 1111111111)
-        	if (/^(\d)\1+$/.test(digits)) {
+        	if (/^(\d) +$/.test(digits)) {
             	return { valid: false, message: "Please enter a genuine phone number." };
         	}
         	// Disallow obvious sequential filler digits
@@ -394,7 +394,7 @@
         	return { valid: true, clean: value.trim() };
     	}
 
- 	   // --- Verified Submission ---
+	   // --- Verified Submission ---
     	async function submitQuiz() {
         	const btn = document.getElementById('submitBtn');
         	const errBox = document.getElementById('quizErrorMsg');
