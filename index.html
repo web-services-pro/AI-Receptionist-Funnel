@@ -293,7 +293,29 @@
 	    // Google Apps Script Webhook URL
     	const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxIHLGXTUsg2u4q6EvZ7Z5Wu_X-R-1k-Ngz_jdWQhH0Shz8wUiuTN7vJBUty5oSjulO/exec";
 
-	    function startQuiz() {
+	    // --- Meta tracking helpers (match the browser event to the server event) ---
+	    function getCookie(name) {
+	        var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+	        return m ? decodeURIComponent(m[1]) : '';
+	    }
+	    function getFbc() {
+	        var fbc = getCookie('_fbc');
+	        if (fbc) return fbc;
+	        var fbclid = new URLSearchParams(window.location.search).get('fbclid');
+	        return fbclid ? 'fb.1.' + Date.now() + '.' + fbclid : '';
+	    }
+	    function getMetaFields() {
+	        return {
+	            eventId: 'lead_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10),
+	            fbp: getCookie('_fbp'),
+	            fbc: getFbc(),
+	            userAgent: navigator.userAgent,
+	            sourceUrl: '',
+	            contentName: 'VoiceAI Quiz Completed'
+	        };
+	    }
+		
+		function startQuiz() {
     	    document.getElementById('introPage').style.display = 'none';
         	document.querySelector('[data-step="1"]').classList.remove('hidden-step');
         	document.getElementById('progressContainer').classList.remove('hidden-step');
@@ -456,6 +478,12 @@
     	    const queryParams = new URLSearchParams(answers).toString();
         	const finalRedirectUrl = `audit-report.html?${queryParams}`;
         	answers['report_url'] = baseUrl + finalRedirectUrl;
+
+			// Tracking fields for the server-side Meta event. Added AFTER the report URL is built, so they never appear in the address bar.
+	        const meta = getMetaFields();
+	        meta.sourceUrl = baseUrl + 'audit-report.html';
+	        sessionStorage.setItem('voiceai_event_id', meta.eventId);
+	        Object.assign(answers, meta);
 
 	        // 4. Send to Webhook
     	    try {
