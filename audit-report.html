@@ -27,6 +27,24 @@
     </style>
     <!-- Meta Pixel Code -->
 	<script>
+	// Step 1: grab the report data from the URL, then clear the URL BEFORE the pixel loads,
+	// so Meta never receives the lead's email, phone, or name in the page address.
+	(function () {
+	    try {
+    	    var q = window.location.search;
+        	if (q && q.length > 1) {
+            	sessionStorage.setItem('voiceai_report_query', q);
+	            window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    	    } else {
+        	    q = sessionStorage.getItem('voiceai_report_query') || '';
+        	}
+        	window.__reportQuery = q;
+    	} catch (e) {
+        	window.__reportQuery = window.location.search;
+    	}
+	})();
+	</script>
+	<script>
 	!function(f,b,e,v,n,t,s)
 	{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 	n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -38,30 +56,21 @@
 	fbq('init', '764970315154958');
 	fbq('track', 'PageView');
 
-	// STRICT VERIFIED LEAD TRIGGER
-	(function() {
+	// Step 2: Lead fires once, only right after a verified quiz completion in this browser session.
+	// The eventID matches the one the quiz page sent to the server, so Meta counts ONE lead, not two.
+	(function () {
 	    try {
-	        const params = new URLSearchParams(window.location.search);
-	        const email = params.get('email');
-	        const token = sessionStorage.getItem('voiceai_auth_lead_token');
-	        const hasFired = sessionStorage.getItem('voiceai_lead_fired');
-	        
-	        // Verify that a syntactically correct email is present in URL
-	        const emailValid = email && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-
-	        // Only trigger if arriving directly from a completed, verified quiz session
-	        if (token && !hasFired && emailValid) {
-	            fbq('track', 'Lead', {
-	                content_name: 'VoiceAI Quiz Completed',
-	                currency: 'USD'
-	            });
-	            // Persist fired state and consume single-use token immediately
-	            sessionStorage.setItem('voiceai_lead_fired', '1');
+    	    var token = sessionStorage.getItem('voiceai_auth_lead_token');
+        	var hasFired = sessionStorage.getItem('voiceai_lead_fired');
+	        if (token && !hasFired) {
+    	        var eventId = sessionStorage.getItem('voiceai_event_id');
+        	    fbq('track', 'Lead', { content_name: 'VoiceAI Quiz Completed' }, eventId ? { eventID: eventId } : {});
+            	sessionStorage.setItem('voiceai_lead_fired', '1');
 	            sessionStorage.removeItem('voiceai_auth_lead_token');
-	        }
-	    } catch (e) {
-	        console.error("Lead tracking exception:", e);
-	    }
+    	    }
+    	} catch (e) {
+        	console.error('Lead tracking exception:', e);
+    	}
 	})();
 	</script>
 	<noscript><img height="1" width="1" style="display:none"
@@ -98,7 +107,7 @@
             </div>
 
             <h1 class="text-3xl md:text-5xl font-bold mb-4 text-white">
-                <span id="companyNameDisplay">Your Business</span> Has a Large Revenue Leak!
+                <span id="companyNameDisplay">Your Business</span> <span id="headlineTail">Has a Large Revenue Leak</span>
             </h1>
             <p class="text-slate-300 text-lg">You're bleeding revenue from preventable gaps in your lead response system.</p>
         </div>
@@ -1099,7 +1108,7 @@
     </div>
 
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
+        const urlParams = new URLSearchParams(window.__reportQuery || window.location.search);
         function getParam(key, backup) { return urlParams.get(key) || backup; }
 
         const monthlyLeads = parseInt(getParam('monthlyLeads', '100'));
@@ -1130,15 +1139,35 @@
             timeWaste
         };
 
-        // REVENUE LOSS CALCULATION
-        // Formula: Monthly Leads × 62% Missed Rate × 25% Conversion Rate × Customer Value
-        const missedCallRate = 0.62;
-        const conversionRate = 0.25;
-        const missedCallsPerMonth = Math.round(monthlyLeads * missedCallRate);
-        const monthlyRevenueLoss = Math.round(missedCallsPerMonth * conversionRate * customerValue);
-        const annualRevenueLoss = monthlyRevenueLoss * 12;
-        const dailyRevenueLoss = Math.round(monthlyRevenueLoss / 30);
+        // REVENUE LOSS CALCULATION (personalized to the answers; must match the Apps Script)
+        // Lost leads = Leads x (Miss Rate + (1 - Miss Rate) x Slow-Response Loss)
+        // Monthly loss = Lost leads x 25% close rate x Customer Value
+        function calcRevenueLoss(a) {
+            const pick = (map, key, fallback) => Object.prototype.hasOwnProperty.call(map, key) ? map[key] : fallback;
+            const missByCoverage = { always: 0.05, sometimes: 0.20, rarely: 0.35, never: 0.50 };
+            const teamBump = { consistent: 0, variable: 0.02, unpredictable: 0.04, solo: 0.06 };
+            const slowLoss = { instant: 0, same_day: 0.05, next_day: 0.10, slow: 0.15 };
+            const closeRate = 0.25;
 
+            const missRate = Math.min(0.60, pick(missByCoverage, a.afterHours, 0.20) + pick(teamBump, a.teamPerformance, 0.02));
+            const slow = pick(slowLoss, a.responseTime, 0.05);
+            const lostLeads = a.monthlyLeads * (missRate + (1 - missRate) * slow);
+            const monthly = Math.round(lostLeads * closeRate * a.customerValue);
+            return {
+                missRate: missRate,
+                missedCalls: Math.round(a.monthlyLeads * missRate),
+                monthly: monthly,
+                annual: monthly * 12,
+                daily: Math.round(monthly / 30)
+            };
+        }
+        const loss = calcRevenueLoss(inputs);
+        const missedCallRate = loss.missRate;
+        const missedCallsPerMonth = loss.missedCalls;
+        const monthlyRevenueLoss = loss.monthly;
+        const annualRevenueLoss = loss.annual;
+        const dailyRevenueLoss = loss.daily;
+		
         // SCORE CALCULATION (0-100)
         let score = 100;
 
@@ -1174,6 +1203,21 @@
 
         // Display Updates
         document.getElementById('companyNameDisplay').innerText = inputs.company;
+		// Honest headline based on how big the gaps actually are
+        (function () {
+            var tail = document.getElementById('headlineTail');
+            var sub = document.getElementById('headlineSub');
+            if (score >= 80) {
+                tail.innerText = 'Is in Good Shape';
+                sub.innerText = "Your lead response is strong. Here is the smaller upside still on the table.";
+            } else if (score >= 55) {
+                tail.innerText = 'Has a Revenue Leak';
+                sub.innerText = "A few preventable gaps in your lead response system are costing you booked jobs.";
+            } else {
+                tail.innerText = 'Has a Large Revenue Leak';
+                sub.innerText = "You're losing revenue to preventable gaps in your lead response system.";
+            }
+        })();
         document.getElementById('scoreDisplay').innerText = score;
         
         const circle = document.getElementById('scoreGauge');
